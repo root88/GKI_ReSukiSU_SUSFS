@@ -1087,15 +1087,7 @@ jobs:
           CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
           CONFIG_KSU_SUSFS_SUS_MAP=y
           EOF
-
-      # ==================== 添加自定义签名 ====================
-      - name: 添加自定义签名
-        if: ${{ inputs.ksu_expected_size != '' && inputs.ksu_expected_hash != '' }}
-        run: |
-          echo "size: ${{ inputs.ksu_expected_size }}, hash: ${{inputs.ksu_expected_hash }}"
-          echo "CONFIG_KSU_EXPECTED_SIZE=${{ inputs.ksu_expected_size }}" >> "$DEFCONFIG"
-          echo "CONFIG_KSU_EXPECTED_HASH=${{ inputs.ksu_expected_hash }}" >> "$DEFCONFIG"
-
+      
       # ==================== 配置内核名称 ====================
       - name: 配置内核名称
         working-directory: ${{ env.KERNEL_ROOT }}
@@ -1241,7 +1233,15 @@ jobs:
               if [ "${{ inputs.kernel_version }}" = "6.12" ]; then
                 LTO_FLAG="--lto=none"
               fi
-              tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast $LTO_FLAG $FRAG_FLAG //common:kernel_aarch64_dist || exit 1
+
+              # 添加自定义签名
+              BAZEL_FLAG=
+              if [ ${{ inputs.ksu_expected_size != '' && inputs.ksu_expected_hash != '' }} ]; then
+                echo "管理器APP签名 size: ${{ inputs.ksu_expected_size }}, hash: ${{inputs.ksu_expected_hash }}"
+                BAZEL_FLAG="--copt=-DKSU_EXPECTED_SIZE=${{ inputs.ksu_expected_size }} --copt=-DKSU_EXPECTED_HASH=${{ inputs.ksu_expected_hash }}"
+              fi
+
+              tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast $LTO_FLAG $BAZEL_FLAG $FRAG_FLAG //common:kernel_aarch64_dist || exit 1
               strings ./bazel-bin/common/kernel_aarch64/Image | grep 'Linux version'
             fi
 
