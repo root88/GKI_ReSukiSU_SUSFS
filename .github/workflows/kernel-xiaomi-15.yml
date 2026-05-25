@@ -1,0 +1,94 @@
+name: Xiaomi 15 内核构建 - Android 15 (6.6.77)
+
+# 适配 Node.js 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      # ==================== KernelSU 配置 ====================
+      # KernelSU 变体固定为 ReSukiSU
+      kernelsu_branch:
+        description: "KSU 分支 (main/builtin/自定义commit hash, 留空使用默认)"
+        required: false
+        type: string
+        default: ""
+      ksu_expected_size:
+        required: false
+        type: string
+        default: "0x339"
+      ksu_expected_hash:
+        required: false
+        type: string
+        default: "12ae3e5ca71794b3da53c1a30b9871995440188156013c56cfc3aa4480272bc7"
+
+      # ==================== 可选配置 ====================
+      version:
+        description: "自定义版本名 (可选)"
+        required: false
+        type: string
+
+      # ==================== 功能开关 ====================
+      use_zram:
+        description: "启用 ZRAM 增强算法"
+        required: true
+        type: boolean
+        default: false
+      use_bbg:
+        description: "启用 BBG 防格机"
+        required: true
+        type: boolean
+        default: false
+      use_rekernel:
+        description: "启用 Re-Kernel 驱动"
+        required: false
+        type: boolean
+        default: false
+      cancel_susfs:
+        description: "禁用 SUSFS"
+        required: true
+        type: boolean
+        default: false
+      droidspaces:
+        description: "Droidspaces 容器支持 (5.10~6.6: 槽位补丁, 6.12: 开/关)"
+        required: false
+        type: choice
+        options:
+          - "off"
+          - "678"
+          - "123"
+          - "345"
+        default: "off"
+
+jobs:
+  build-xiaomi-kernel:
+    name: "6.6.77-android15-2025-03"
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      android_version: "android15"
+      kernel_version: "6.6"
+      sub_level: "77"
+      os_patch_level: "2025-03"
+      revision: "r11"
+      ksu_variant: "ReSukiSU"
+      ksu_branch: ${{ inputs.kernelsu_branch }}
+      ksu_expected_size: ${{ inputs.ksu_expected_size }}
+      ksu_expected_hash: ${{ inputs.ksu_expected_hash }}
+      version: ${{ inputs.version || '' }}
+      build_time: "Fri Aug 29 01:48:34 UTC 2025"
+      use_zram: ${{ inputs.use_zram }}
+      use_bbg: ${{ inputs.use_bbg }}
+      use_rekernel: ${{ inputs.use_rekernel || false }}
+      supp_op: false
+      enable_susfs: ${{ !inputs.cancel_susfs }}
+      droidspaces: ${{ inputs.droidspaces || 'off' }}
+
+  get-ksu-manager:
+    uses: ./.github/workflows/get-manager.yml
+    secrets: inherit

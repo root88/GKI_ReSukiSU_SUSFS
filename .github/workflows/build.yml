@@ -10,6 +10,9 @@ name: 内核构建流程
 # 适配 Node.js 24
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  KERNEL_ROOT: ""
+  CONFIG: ""
+  REJ_COUNT: ""
 
 permissions:
   contents: write
@@ -38,6 +41,12 @@ on:
         type: string
       ksu_branch:
         required: true
+        type: string
+      ksu_expected_size:
+        required: false
+        type: string
+      ksu_expected_hash:
+        required: false
         type: string
 
       # ==================== 可选配置 ====================
@@ -1039,16 +1048,6 @@ jobs:
           CONFIG_TMPFS_POSIX_ACL=y
           EOF
 
-          if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
-            if [[ "${{ inputs.use_kpm }}" == enabled* ]] || [[ "${{ inputs.use_kpm }}" == patched* ]]; then
-              if ! grep -RqsE '^[[:space:]]*config[[:space:]]+KPM([[:space:]]|$)' common KernelSU 2>/dev/null; then
-                echo "错误: 已请求启用 KPM，但当前 KernelSU 代码未声明 CONFIG_KPM" >&2
-                exit 1
-              fi
-              echo "CONFIG_KPM=y" >> "$DEFCONFIG"
-            fi
-          fi
-
           CURRENT_SUB="${{ inputs.sub_level }}"
           if [[ ! "$CURRENT_SUB" =~ ^[0-9]+$ ]]; then
             CURRENT_SUB=99999
@@ -1088,6 +1087,14 @@ jobs:
           CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
           CONFIG_KSU_SUSFS_SUS_MAP=y
           EOF
+
+      # ==================== 添加自定义签名 ====================
+      - name: 添加自定义签名
+        if: ${{ inputs.ksu_expected_size != '' && inputs.ksu_expected_hash != '' }}
+        run: |
+          echo "size: ${{ inputs.ksu_expected_size }}, hash: ${{inputs.ksu_expected_hash }}"
+          echo "CONFIG_KSU_EXPECTED_SIZE=${{ inputs.ksu_expected_size }}" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_EXPECTED_HASH=${{ inputs.ksu_expected_hash }}" >> "$DEFCONFIG"
 
       # ==================== 配置内核名称 ====================
       - name: 配置内核名称
