@@ -84,6 +84,7 @@ jobs:
       build_time: "Fri Aug 29 01:48:34 UTC 2025"
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
+      use_kpm: "enabled"
       use_rekernel: ${{ inputs.use_rekernel || false }}
       supp_op: false
       enable_susfs: ${{ !inputs.cancel_susfs }}
